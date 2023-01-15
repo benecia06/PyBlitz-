@@ -24,11 +24,10 @@ except AttributeError:
 
 VALID_WORDS_WORDLIST = BASE_PATH / "wordlists/wordle-allowed-guesses.txt"
 ANSWERS_WORDLIST = BASE_PATH / "wordlists/wordle-answers.txt"
-APP_ICON = BASE_PATH / "assets/wordle_logo_32x32.ico"
+APP_ICON = BASE_PATH / "assets/pyblitz.ico"
 BACKSPACE_ICON = BASE_PATH / "assets/backspace.png"
 HELP_ICON = BASE_PATH / "assets/help.png"
 SETTINGS_ICON = BASE_PATH / "assets/settings.png"
-MANUAL_IMAGE = BASE_PATH / "assets/manual_image2.png"
 
 ANSWERS = set(word.upper()
               for word in open(ANSWERS_WORDLIST).read().splitlines())
@@ -36,19 +35,11 @@ ALL_WORDS = set(word.upper() for word in open(
     VALID_WORDS_WORDLIST).read().splitlines()) | ANSWERS
 
 
-class Manual(tk.Frame):
-    def __init__(self, master, *args, **kwargs):
-        tk.Frame.__init__(self, master, *args, **kwargs)
-        self.grid(sticky="ns")
-        self.manual_image = tk.PhotoImage(file=MANUAL_IMAGE)
-        tk.Label(self, image=self.manual_image).grid(sticky="nswe")
-
-
 class Wordle(tk.Frame):
     def __init__(self, master, *args, **kwargs):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.grid(sticky="ns")
-        self.master.title("Wordle - A Word Game")
+        self.master.title("Pyblitz! - A Wordle Game")
         self.master.iconbitmap(APP_ICON)
         self.fullscreen = False
 
@@ -123,7 +114,7 @@ class Wordle(tk.Frame):
         # title
         tk.Label(
             container,
-            text="WORDLE",
+            text="PyBlitz!",
             fg="#d7dadc",
             bg=COLOR_BLANK,
             font=("Helvetica Neue", 28, "bold"),
