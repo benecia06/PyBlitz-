@@ -29,6 +29,7 @@ except AttributeError:
 
 VALID_WORDS_WORDLIST = BASE_PATH / "wordlists/wordle-allowed-guesses.txt"
 ANSWERS_WORDLIST = BASE_PATH / "wordlists/wordle-answers.txt"
+APP_ICON = BASE_PATH / "assets/pyblitz.ico"
 BACKSPACE_ICON = BASE_PATH / "assets/backspace.png"
 HELP_ICON = BASE_PATH / "assets/help.png"
 SETTINGS_ICON = BASE_PATH / "assets/settings.png"
@@ -54,7 +55,7 @@ class Wordle(tk.Frame):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.grid(sticky="ns")
         self.master.title("PyBlitz! - A Wordle Game")
-        # self.master.iconbitmap("PyBlitz_icon.ico")
+        self.master.iconbitmap("APP_ICON")
         # self.master.resizable(False, False)
         self.fullscreen = False
         self.master.bind("<F11>", self.toggle_fullscreen)
@@ -67,14 +68,15 @@ class Wordle(tk.Frame):
 
     def fullscreen_toggle(self, event=None):
         if self.fullscreen:
-            self.master.attributes("-fullscreen", False)
+            self.master.wm_attributes("-fullscreen", False)
             self.fullscreen = False
         else:
-            self.master.attributes("-fullscreen", True)
+            self.master.wm_attributes("-fullscreen", True)
             self.fullscreen = True
 
     def new_game(self):
         # self.word = CHOOSE TODAYS WORD FROM WORDLIST
+        self.answer = random.choice(list(ANSWERS)).upper()
         self.words = [""] * 6  # 6 Tries
         self.correct_letters = set()
         self.close_letters = set()
@@ -97,16 +99,24 @@ class Wordle(tk.Frame):
         else:
             self.master.destroy()
 
+    def humiliate(self):
+        title = "Better Luck Next Time"
+        message = f"One More Game?\n The word was: {self.answer}."
+        if messagebox.askyesno(title, message):
+            self.new_game()
+        else:
+            self.master.destroy()
+
     def init_ui(self):
         self.icons = {
-            "settings": tk.PhotoImage(file="assets/settings.png"),
-            "help": tk.PhotoImage(file="assets/help.png"),
-            "backspace": tk.PhotoImage(file="assets/backspace.png"),
+            "settings": tk.PhotoImage(file=SETTINGS_ICON),
+            "help": tk.PhotoImage(file=HELP_ICON),
+            "backspace": tk.PhotoImage(file=BACKSPACE_ICON),
         }
 
         # TOP BAR STARTS HERE
         container = tk.Frame(self, bg=COLOR_BLANK, height=50)
-        container.grid(row=0, column=0, sticky="we")
+        container.grid(sticky="we")
         container.grid_columnconfigure(1, weight=1)
 
         # help button
@@ -116,7 +126,7 @@ class Wordle(tk.Frame):
             bg=COLOR_BLANK,
             border=0,
             curson="hand2",
-        ).grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        ).grid(row=0, column=0)
 
         # TITLE
         tk.Label(
@@ -134,7 +144,7 @@ class Wordle(tk.Frame):
             bg=COLOR_BLANK,
             border=0,
             curson="hand2",
-        ).grid(row=0, column=2, padx=10, pady=10, sticky="e")
+        ).grid(row=0, column=2)
         # END OF TOP BAR
 
         # SEPARATOR PADDING
