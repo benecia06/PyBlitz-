@@ -1,26 +1,21 @@
-'''
-TODO:
-[X] Add GUI
-[] Add choice to select fonts?
-[] Custom Themes?
-[] Figure out a way to get the Wordle wordlist
-[X] add a virtual keyboard
-[] make executable
-'''
 from tkinter import messagebox, ttk
 from pathlib import Path
+
 import tkinter as tk
 import random
-import sys
 import string
+import sys
 
-BOX_SIZE = 60
+
+WORD_LEN = 5
+MAX_TRIES = 6
 COLOR_BORDER_HIGHLIGHT = "#565758"
 COLOR_BLANK = "#121213"
-COLOR_CORRECT = "#538d4e"
-COLOR_CLOSE = "#b59f3b"
 COLOR_INCORRECT = "#3a3a3c"
-PADDING = 5
+COLOR_HALF_CORRECT = "#b59f3b"
+COLOR_CORRECT = "#538d4e"
+BOX_SIZE = 55
+PADDING = 3
 
 try:
     BASE_PATH = Path(sys._MEIPASS)
@@ -29,39 +24,38 @@ except AttributeError:
 
 VALID_WORDS_WORDLIST = BASE_PATH / "wordlists/wordle-allowed-guesses.txt"
 ANSWERS_WORDLIST = BASE_PATH / "wordlists/wordle-answers.txt"
-APP_ICON = BASE_PATH / "assets/pyblitz.ico"
+APP_ICON = BASE_PATH / "assets/wordle_logo_32x32.ico"
 BACKSPACE_ICON = BASE_PATH / "assets/backspace.png"
 HELP_ICON = BASE_PATH / "assets/help.png"
 SETTINGS_ICON = BASE_PATH / "assets/settings.png"
 MANUAL_IMAGE = BASE_PATH / "assets/manual_image2.png"
+
 ANSWERS = set(word.upper()
               for word in open(ANSWERS_WORDLIST).read().splitlines())
 ALL_WORDS = set(word.upper() for word in open(
     VALID_WORDS_WORDLIST).read().splitlines()) | ANSWERS
 
 
-class Manual(tk.Frame)
-
-
-def __init__(self, master, *args, **kwargs):
-    tk.Frame.__init__(self, master, *args, **kwargs)
-    self.grid(sticky="ns")
-    self.manual_image = tk.PhotoImage(file=MANUAL_IMAGE)
-    tk.Label(self, image=self.manual_image).grid(sticky="nswe")
+class Manual(tk.Frame):
+    def __init__(self, master, *args, **kwargs):
+        tk.Frame.__init__(self, master, *args, **kwargs)
+        self.grid(sticky="ns")
+        self.manual_image = tk.PhotoImage(file=MANUAL_IMAGE)
+        tk.Label(self, image=self.manual_image).grid(sticky="nswe")
 
 
 class Wordle(tk.Frame):
     def __init__(self, master, *args, **kwargs):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.grid(sticky="ns")
-        self.master.title("PyBlitz! - A Wordle Game")
-        self.master.iconbitmap("APP_ICON")
-        # self.master.resizable(False, False)
+        self.master.title("Wordle - A Word Game")
+        self.master.iconbitmap(APP_ICON)
         self.fullscreen = False
-        self.master.bind("<F11>", self.toggle_fullscreen)
+
+        self.master.bind("<F11>", self.fullscreen_toggle)
         self.master.bind("<Return>", self.check_word)
         self.master.bind("<BackSpace>", self.remove_letter)
-        self.master.bind("<Key>", self.add_letter)
+        self.master.bind("<Key>", self.enter_letter)
 
         self.init_ui()
         self.new_game()
@@ -75,33 +69,31 @@ class Wordle(tk.Frame):
             self.fullscreen = True
 
     def new_game(self):
-        # self.word = CHOOSE TODAYS WORD FROM WORDLIST
         self.answer = random.choice(list(ANSWERS)).upper()
-        self.words = [""] * 6  # 6 Tries
+        self.words = [""] * 6
         self.correct_letters = set()
-        self.close_letters = set()
+        self.half_correct_letter = set()
         self.incorrect_letters = set()
 
-        # resetting the board
-        for i in range(6):
+        # reset the labels and keyboard
+        for i in range(MAX_TRIES):
             self.current_word = i
             self.update_labels()
         self.current_word = 0
         self.update_keyboard()
 
-    def congralutions(self):
-        concat_string = "PyBlitz! "
+    def congratulate(self):
         title = ["Genius", "Magnificent", "Impressive",
                  "Splendid", "Great", "Phew"][self.current_word]
-        message = "Do you want to play again?"
-        if messagebox.askyesno(concat_string+title, message):
+        message = "Wanna Play Another Game?"
+        if messagebox.askyesno(title, message):
             self.new_game()
         else:
             self.master.destroy()
 
     def humiliate(self):
-        title = "Better Luck Next Time"
-        message = f"One More Game?\n The word was: {self.answer}."
+        title = "Better Luck Next Time!"
+        message = f"One More Game?\n(BTW the word was {self.answer}.)"
         if messagebox.askyesno(title, message):
             self.new_game()
         else:
@@ -115,7 +107,7 @@ class Wordle(tk.Frame):
         }
 
         # TOP BAR STARTS HERE
-        container = tk.Frame(self, bg=COLOR_BLANK, height=50)
+        container = tk.Frame(self, bg=COLOR_BLANK, height=40)
         container.grid(sticky="we")
         container.grid_columnconfigure(1, weight=1)
 
@@ -125,16 +117,16 @@ class Wordle(tk.Frame):
             image=self.icons["help"],
             bg=COLOR_BLANK,
             border=0,
-            curson="hand2",
+            cursor="hand2",
         ).grid(row=0, column=0)
 
-        # TITLE
+        # title
         tk.Label(
             container,
-            text="PyBlitz!",
+            text="WORDLE",
             fg="#d7dadc",
             bg=COLOR_BLANK,
-            font=("Helvetica", 28, "bold"),
+            font=("Helvetica Neue", 28, "bold"),
         ).grid(row=0, column=1)
 
         # settings button
@@ -143,24 +135,24 @@ class Wordle(tk.Frame):
             image=self.icons["settings"],
             bg=COLOR_BLANK,
             border=0,
-            curson="hand2",
+            cursor="hand2",
         ).grid(row=0, column=2)
-        # END OF TOP BAR
+        # TOP BAR ENDS HERE
 
-        # SEPARATOR PADDING
+        # separator
         ttk.Separator(self).grid(sticky="ew")
         tk.Frame(self, bg=COLOR_BLANK, height=40).grid()
 
-        # WORDLE BOARD STARTS HERE
-        # extra space will be given to main game grid
+        # GAME GRID STARTS HERE
+        # if there is extra space then give it to main game grid
         self.rowconfigure(3, weight=1)
         container = tk.Frame(self, bg=COLOR_BLANK)
         container.grid()
 
         self.labels = []
-        for i in range(6):
+        for i in range(MAX_TRIES):
             row = []
-            for j in range(5):
+            for j in range(WORD_LEN):
                 cell = tk.Frame(
                     container,
                     width=BOX_SIZE,
@@ -176,33 +168,32 @@ class Wordle(tk.Frame):
                     cell,
                     text="",
                     justify="center",
-                    font=("Helvetica", 24, "bold"),
+                    font=("Helvetica Neue", 24, "bold"),
                     bg=COLOR_BLANK,
-                    fg="d7dadc",
+                    fg="#d7dadc",
                     highlightthickness=1,
                     highlightbackground=COLOR_BLANK,
                 )
                 t.grid(sticky="nswe")
                 row.append(t)
             self.labels.append(row)
-         # END OF WORDLE BOARD
+        # GAME GRID ENDS HERE
 
-        # SEPARATOR PADDING
+        # bottom empty separator
         tk.Frame(self, bg=COLOR_BLANK, height=40).grid()
 
-        # KEYBOARD STARTS HERE
+        # VIRTUAL KEYBOARD STARTS HERE
         container = tk.Frame(self, bg=COLOR_BLANK)
         container.grid()
 
-        # adding qwerty keyboard
+        # adding all the alphabets
         self.keyboard_buttons = {}
         for i, keys in enumerate(["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]):
             row = tk.Frame(container, bg=COLOR_BLANK)
             row.grid(row=i, column=0)
 
             for j, c in enumerate(keys):
-                if i == 2:
-
+                if i == 2:  # leave one column for the ENTER button in the last row
                     j += 1
 
                 cell = tk.Frame(
@@ -220,9 +211,9 @@ class Wordle(tk.Frame):
                     cell,
                     text=c,
                     justify="center",
-                    font=("Helvetica", 13),
+                    font=("Helvetica Neue", 13),
                     bg=COLOR_BLANK,
-                    fg="d7dadc",
+                    fg="#d7dadc",
                     cursor="hand2",
                     border=0,
                     command=lambda c=c: self.enter_letter(key=c),
@@ -230,7 +221,7 @@ class Wordle(tk.Frame):
                 btn.grid(sticky="nswe")
                 self.keyboard_buttons[c] = btn
 
-        # adding enter and delete buttons
+        # adding the enter and delete buttons
         for col, text, func in ((0, "ENTER", self.check_word), (8, "", self.remove_letter)):
             cell = tk.Frame(
                 row,
@@ -247,25 +238,26 @@ class Wordle(tk.Frame):
                 cell,
                 text=text,
                 justify="center",
-                font=("Helvetica", 13),
+                font=("Helvetica Neue", 13),
                 bg=COLOR_BLANK,
-                fg="d7dadc",
+                fg="#d7dadc",
                 cursor="hand2",
                 border=0,
                 command=func,
             )
             btn.grid(row=0, column=0, sticky="nswe")
 
-        # delete button
+        # set the image for delete button
         btn.configure(image=self.icons["backspace"])
-        # END OF KEYBOARD
+
+        # VIRTUAL KEYBOARD ENDS HERE
 
     def update_keyboard(self):
         for key, btn in self.keyboard_buttons.items():
             if key in self.correct_letters:
                 btn["bg"] = COLOR_CORRECT
-            elif key in self.close_letters:
-                btn["bg"] = COLOR_CLOSE
+            elif key in self.half_correct_letter:
+                btn["bg"] = COLOR_HALF_CORRECT
             elif key in self.incorrect_letters:
                 btn["bg"] = COLOR_INCORRECT
             else:
@@ -288,28 +280,42 @@ class Wordle(tk.Frame):
                 label["highlightbackground"] = COLOR_BORDER_HIGHLIGHT if letter else COLOR_BLANK
 
     def check_word(self, event=None):
-        # word checking logic
+        print("checking word:", self.words[self.current_word])
+        word = self.words[self.current_word]
+        # ADD WORDLE LOGIC HERE
+
+        if word == self.answer:
+            self.congratulate()
+
+        self.current_word += 1
+        if self.current_word >= MAX_TRIES:
+            self.humiliate()
+
+    def remove_letter(self, event=None):
+        if self.words[self.current_word]:
+            print(self.words[self.current_word][-1], "was deleted.")
+            self.words[self.current_word] = self.words[self.current_word][:-1]
+            self.update_labels()
 
     def enter_letter(self, event=None, key=None):
-        # letter entering logic
         key = key or event.keysym.upper()
         if key in string.ascii_uppercase:
-            print(key, "pressed")
+            print(key, "was entered.")
             self.words[self.current_word] += key
-            # preventing overflow of letters
-            self.words[self.current_word] = self.words[self.current_word][:5]
+            # prevent user from entering excess letters
+            self.words[self.current_word] = self.words[self.current_word][:WORD_LEN]
             self.update_labels()
 
 
 if __name__ == "__main__":
-    # initializing the app
+    # initialize the app
     root = tk.Tk()
     root.configure(bg=COLOR_BLANK)
     app = Wordle(root, bg=COLOR_BLANK)
 
-    # centering the app
+    # center the frame
     root.rowconfigure(0, weight=1)
     root.columnconfigure(0, weight=1)
 
-    # running the app
+    # run the app
     app.mainloop()
