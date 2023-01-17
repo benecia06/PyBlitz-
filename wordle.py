@@ -274,6 +274,43 @@ class Wordle(tk.Frame):
         print("checking word:", self.words[self.current_word])
         word = self.words[self.current_word]
         # ADD WORDLE LOGIC HERE
+        if len(word)<WORD_LEN:
+            print("Not enough letters")
+        #CHECK IF WORD IS SHORTER THAN 5 letters
+        if word not in ALL_WORDS:
+            print(f"Not legitimate word. Try again")
+        #CHECK IF WORD ENTERED IS A LEGITIMATE WORD
+        def find_char_pos(word,char):
+            positions=[]
+            pos= word.find(char)
+            while pos!= -1:
+                positions.append(pos)
+                pos = word.find(char, pos + 1)
+            return positions
+        colors = [COLOR_INCORRECT]*len(self.answer)
+        counted_pos=set()
+        for index,(guess, expected) in enumerate(zip(word,self.answer)):
+            if guess==expected:
+                colors.append(COLOR_CORRECT)
+        for index, guess in enumerate(word):
+            if guess in self.answer and colors[index]!=COLOR_CORRECT:
+                positions= find_char_pos(self.answer, guess)
+
+                for pos in positions:
+                    if pos not in counted_pos:
+                        colors.append(COLOR_HALF_CORRECT)
+
+                        break
+                
+            return colors
+
+        #ITERATE THROUGH ENTERED WORD AND WORDLE WORD
+            """
+            3 cases
+            1) i = j THEN APPEND GREEN TO color array
+            2) check frequency of x in wordle word, if it exists then append COLOR_HALF_CORRECT
+            3) else incorrect append COLOR_INCORRECT
+            """
 
         if word == self.answer:
             self.congratulate()
