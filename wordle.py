@@ -291,6 +291,7 @@ class Wordle(tk.Frame):
         counted_pos=set()
         for index,(guess, expected) in enumerate(zip(word,self.answer)):
             if guess==expected:
+                counted_pos.add(index)
                 colors.append(COLOR_CORRECT)
         for index, guess in enumerate(word):
             if guess in self.answer and colors[index]!=COLOR_CORRECT:
